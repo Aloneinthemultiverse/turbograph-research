@@ -113,6 +113,11 @@ public final class Corpus {
      * Passages sharing a title form one document.
      */
     static Corpus loadTsv(Path tsv, Embedder embedder, Path embCache, Map<String, Integer> keyToIdx) throws Exception {
+        return loadTsv(tsv, keyToIdx, text -> embedder.documents(java.util.Arrays.asList(text), embCache));
+    }
+
+    /** Same corpus with passage embeddings supplied (e.g. from the Kaggle embedding job). */
+    static Corpus loadTsv(Path tsv, Map<String, Integer> keyToIdx, EmbeddingSource source) throws Exception {
         List<String> lines = Files.readAllLines(tsv);
         int n = lines.size();
         String[] text = new String[n];
@@ -134,8 +139,26 @@ public final class Corpus {
             ord[i] = perDoc.merge(d, 1, Integer::sum) - 1;
             keyToIdx.put(f[3], i);
         }
-        float[][] emb = embedder.documents(java.util.Arrays.asList(text), embCache);
+        float[][] emb = source.embed(text);
         return new Corpus(n, true, text, doc, titles.toArray(String[]::new), ord, emb);
+    }
+
+    interface EmbeddingSource {
+        float[][] embed(String[] texts) throws Exception;
+    }
+
+    /** Rows of 768-d little-endian float16 vectors. */
+    static float[][] readF16(Path file, int dim) throws Exception {
+        java.nio.ShortBuffer sb = java.nio.ByteBuffer.wrap(Files.readAllBytes(file))
+                .order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer();
+        int n = sb.remaining() / dim;
+        float[][] out = new float[n][dim];
+        for (int i = 0; i < n; i++) {
+            for (int d = 0; d < dim; d++) {
+                out[i][d] = Float.float16ToFloat(sb.get());
+            }
+        }
+        return out;
     }
 
     /** Entity strings of a chunk: identifiers, plus names and the own title for wiki corpora. */

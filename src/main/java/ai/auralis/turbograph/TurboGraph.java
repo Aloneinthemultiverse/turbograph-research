@@ -239,7 +239,7 @@ public final class TurboGraph {
                 System.currentTimeMillis() - t0, c::queryEntities);
     }
 
-    private static int[] beam(TwoBitCodec codec, float[] q, int entry, Code[] code, int[][] sim, int[] simLen,
+    static int[] beam(TwoBitCodec codec, float[] q, int entry, Code[] code, int[][] sim, int[] simLen,
                               int ef, int m) {
         BitSet seen = new BitSet();
         PriorityQueue<float[]> cand = new PriorityQueue<>((a, b) -> Float.compare(b[0], a[0]));
@@ -281,7 +281,7 @@ public final class TurboGraph {
         return out;
     }
 
-    private static void prune(TwoBitCodec codec, int u, Code[] code, int[][] sim, int[] simLen, int mMax) {
+    static void prune(TwoBitCodec codec, int u, Code[] code, int[][] sim, int[] simLen, int mMax) {
         float[] qu = codec.decodeRotated(code[u]);
         Integer[] idx = new Integer[simLen[u]];
         float[] sc = new float[simLen[u]];

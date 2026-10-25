@@ -6,3 +6,6 @@ data/hipporag/*.json
 data/hipporag/*.tsv
 results/*.log
 results/*.err
+kaggle/*/build/
+kaggle/*/out/
+data/hipporag/turbohippo/

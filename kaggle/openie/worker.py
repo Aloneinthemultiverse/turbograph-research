@@ -53,6 +53,8 @@ def parse(out):
 
 def main():
     sh("pip install -q vllm")
+    # vLLM brings its own torch; Kaggle's preinstalled torchaudio then mismatches CUDA and breaks imports.
+    sh("pip uninstall -y -q torchaudio")
     from vllm import LLM, SamplingParams
 
     files = {os.path.basename(p).split(".")[0]: p for p in glob.glob("/kaggle/input/**/*.corpus.tsv", recursive=True)}

@@ -29,10 +29,11 @@ def main():
 
     model = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True, device="cuda")
     model.half()
+    model.max_seq_length = 1024  # long passages at batch 256 ran a T4 out of memory
 
     def emb(texts, prefix, path):
         t0 = time.time()
-        v = model.encode([prefix + t for t in texts], batch_size=256, normalize_embeddings=False,
+        v = model.encode([prefix + t for t in texts], batch_size=32, normalize_embeddings=False,
                          convert_to_numpy=True, show_progress_bar=False)
         v.astype("<f2").tofile(path)
         print(f"  {os.path.basename(path)}: {len(texts)} in {time.time() - t0:.0f}s", flush=True)

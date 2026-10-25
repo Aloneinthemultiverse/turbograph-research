@@ -2,3 +2,7 @@ target/
 cp.txt
 results/cache/
 results/run.*
+data/hipporag/*.json
+data/hipporag/*.tsv
+results/*.log
+results/*.err

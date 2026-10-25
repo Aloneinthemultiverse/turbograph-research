@@ -1,0 +1,20 @@
+dataset,method,full_precision,index_mb,r2,r5,all5,ms,nodes,accepted
+2wikimultihopqa,"Exact float32 scan",true,18.80,0.6605,0.7190,0.4270,6.10,6119,
+2wikimultihopqa,"TurboVec flat 2-bit scan",false,1.59,0.6583,0.7143,0.4180,5.24,6119,
+2wikimultihopqa,"TurboVec flat 2-bit + exact rescore(100)",true,1.59,0.6605,0.7190,0.4270,5.54,6119,
+2wikimultihopqa,"BM25 keyword",false,2.28,0.5503,0.6550,0.3250,0.28,12921,
+2wikimultihopqa,"KG entity link + 1-hop",false,5.54,0.2543,0.2788,0.0900,0.14,38,38
+2wikimultihopqa,"2-bit beam walk (ef=200)",false,5.54,0.5678,0.6193,0.3530,2.36,1306,
+2wikimultihopqa,"2-bit threshold expansion (delta=0.08)",false,5.54,0.4163,0.4363,0.1240,0.50,398,3
+2wikimultihopqa,"Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0)",false,5.54,0.2355,0.3118,0.1180,3.38,1782,75
+2wikimultihopqa,"Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0)",false,5.54,0.2878,0.4653,0.1790,8.63,7719,74
+2wikimultihopqa,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.05)",false,5.54,0.4668,0.5150,0.2510,4.04,1782,1205
+2wikimultihopqa,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1)",false,5.54,0.4658,0.5168,0.2550,3.69,1782,1205
+2wikimultihopqa,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.2)",false,5.54,0.4548,0.5213,0.2610,3.45,1782,1205
+2wikimultihopqa,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.05)",false,5.54,0.6408,0.6995,0.3980,9.13,7719,1176
+2wikimultihopqa,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1)",false,5.54,0.6380,0.7030,0.4040,9.28,7719,1176
+2wikimultihopqa,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.2)",false,5.54,0.6175,0.7058,0.4070,8.90,7719,1176
+2wikimultihopqa,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1) + exact rescore",true,5.54,0.6415,0.6988,0.4000,9.52,7719,1176
+2wikimultihopqa,"Hybrid RRF: flat 2-bit + BM25",false,3.87,0.6298,0.7055,0.3990,5.78,19040,
+2wikimultihopqa,"Hybrid RRF: flat 2-bit + BM25 + fused PPR SCAN",false,9.40,0.6323,0.7070,0.4080,14.92,26758,
+2wikimultihopqa,"Hybrid RRF: flat+rescore + BM25 + fused PPR SCAN",true,9.40,0.6313,0.7070,0.4070,15.58,26758,

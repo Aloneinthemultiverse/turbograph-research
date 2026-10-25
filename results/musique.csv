@@ -1,0 +1,20 @@
+dataset,method,full_precision,index_mb,r2,r5,all5,ms,nodes,accepted
+musique,"Exact float32 scan",true,35.81,0.3992,0.5324,0.1800,11.28,11656,
+musique,"TurboVec flat 2-bit scan",false,3.03,0.3902,0.5218,0.1730,10.48,11656,
+musique,"TurboVec flat 2-bit + exact rescore(100)",true,3.03,0.3992,0.5324,0.1800,10.22,11656,
+musique,"BM25 keyword",false,4.99,0.3447,0.4431,0.1020,0.62,36457,
+musique,"KG entity link + 1-hop",false,10.16,0.2183,0.2777,0.0510,0.24,83,83
+musique,"2-bit beam walk (ef=200)",false,10.16,0.3719,0.4906,0.1610,3.39,2182,
+musique,"2-bit threshold expansion (delta=0.08)",false,10.16,0.3191,0.3970,0.0850,0.96,784,6
+musique,"Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0)",false,10.16,0.1320,0.2038,0.0450,3.58,2038,74
+musique,"Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0)",false,10.16,0.1605,0.2690,0.0520,14.29,13471,76
+musique,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.05)",false,10.16,0.3137,0.4251,0.1350,4.52,2038,1423
+musique,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1)",false,10.16,0.3130,0.4253,0.1360,3.88,2038,1423
+musique,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.2)",false,10.16,0.2970,0.4199,0.1340,4.04,2038,1423
+musique,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.05)",false,10.16,0.3917,0.5197,0.1740,14.81,13471,1400
+musique,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1)",false,10.16,0.3897,0.5244,0.1770,14.67,13471,1400
+musique,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.2)",false,10.16,0.3741,0.5197,0.1740,14.48,13471,1400
+musique,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1) + exact rescore",true,10.16,0.3976,0.5335,0.1820,16.24,13471,1400
+musique,"Hybrid RRF: flat 2-bit + BM25",false,8.02,0.3952,0.5371,0.1790,12.51,48113,
+musique,"Hybrid RRF: flat 2-bit + BM25 + fused PPR SCAN",false,18.18,0.3989,0.5415,0.1850,28.89,61585,
+musique,"Hybrid RRF: flat+rescore + BM25 + fused PPR SCAN",true,18.18,0.4039,0.5371,0.1820,26.84,61585,

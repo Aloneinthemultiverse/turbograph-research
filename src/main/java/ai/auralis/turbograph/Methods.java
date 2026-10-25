@@ -296,10 +296,21 @@ public final class Methods {
      * 2-bit relevance of the neighbour^gamma x term idf.
      */
     static Method pushPpr(TurboGraph g, Seeds seeds, double alpha, double eps, double gamma) {
+        return pushPpr(g, seeds, alpha, eps, gamma, 0);
+    }
+
+    /**
+     * Push-PPR with a fused ranking when {@code lambda > 0}: every chunk the push touched
+     * is ranked by its own 2-bit relevance plus lambda x its PageRank mass (normalised by
+     * the largest), so a direct match is not buried by graph mass and graph-connected
+     * evidence still rises. lambda = 0 ranks by PageRank mass alone.
+     */
+    static Method pushPpr(TurboGraph g, Seeds seeds, double alpha, double eps, double gamma, double lambda) {
         double[] relW = {1.0, 0.3, 0.7, 1.0};
         return new Method() {
             public String name() {
-                return "Push-PPR " + seeds + " (a=" + alpha + ", eps=" + eps + ", g=" + gamma + ")";
+                return (lambda > 0 ? "Fused 2-bit + Push-PPR " : "Push-PPR ") + seeds + " (a=" + alpha
+                        + ", eps=" + eps + ", g=" + gamma + (lambda > 0 ? ", lambda=" + lambda : "") + ")";
             }
             public boolean fullPrecision() { return false; }
             public long indexBytes() { return g.bytes(); }
@@ -382,11 +393,28 @@ public final class Methods {
                     }
                 }
                 Map<Integer, Float> chunks = new HashMap<>();
-                p.forEach((v, mass) -> {
-                    if (g.kind[v] == TurboGraph.Kind.CHUNK && mass > 0) {
-                        chunks.put(v, mass.floatValue());
+                if (lambda > 0) {
+                    double maxP = p.values().stream().mapToDouble(Double::doubleValue).max().orElse(1);
+                    Set<Integer> cand = new LinkedHashSet<>(rel.keySet());
+                    cand.addAll(p.keySet());
+                    for (int v : cand) {
+                        if (g.kind[v] != TurboGraph.Kind.CHUNK) {
+                            continue;
+                        }
+                        Float sv = rel.get(v);
+                        if (sv == null) {
+                            sv = g.codec.score(q.rq(), g.code[v]);
+                            scored[0]++;
+                        }
+                        chunks.put(v, (float) (sv + lambda * p.getOrDefault(v, 0.0) / maxP));
                     }
-                });
+                } else {
+                    p.forEach((v, mass) -> {
+                        if (g.kind[v] == TurboGraph.Kind.CHUNK && mass > 0) {
+                            chunks.put(v, mass.floatValue());
+                        }
+                    });
+                }
                 return new Result(rankMap(chunks, 100), scored[0], chunks.size());
             }
         };
@@ -430,6 +458,12 @@ public final class Methods {
 
     static List<Integer> queryTerms(TurboGraph g, String text) {
         List<Integer> out = new ArrayList<>();
+        for (String e : g.queryEntities.apply(text)) {
+            Integer t = g.termNode.get(e);
+            if (t != null && !out.contains(t)) {
+                out.add(t);
+            }
+        }
         for (String tok : text.toUpperCase().split("[^A-Z0-9_-]+")) {
             Integer t = g.termNode.get(tok);
             if (t != null && !out.contains(t)) {

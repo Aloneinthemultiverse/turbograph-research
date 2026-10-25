@@ -48,10 +48,12 @@ public final class TurboGraph {
     final int entry;
     final float[][] relVec;
     final long buildMs;
+    /** The corpus's entity extractor, applied to queries. */
+    final java.util.function.Function<String, Set<String>> queryEntities;
 
     private TurboGraph(TwoBitCodec codec, int chunks, int terms, int docs, Kind[] kind, String[] label, Code[] code,
                        int[][] adj, byte[][] rel, float[] idf, Map<String, Integer> termNode, int entry,
-                       float[][] relVec, long buildMs) {
+                       float[][] relVec, long buildMs, java.util.function.Function<String, Set<String>> queryEntities) {
         this.codec = codec;
         this.chunks = chunks;
         this.terms = terms;
@@ -66,6 +68,7 @@ public final class TurboGraph {
         this.entry = entry;
         this.relVec = relVec;
         this.buildMs = buildMs;
+        this.queryEntities = queryEntities;
     }
 
     int size() {
@@ -92,7 +95,7 @@ public final class TurboGraph {
         List<Set<String>> chunkTerms = new ArrayList<>(nC);
         Map<String, Integer> df = new HashMap<>();
         for (int i = 0; i < nC; i++) {
-            Set<String> ts = Corpus.terms(c.text[i]);
+            Set<String> ts = c.termsOf(i);
             chunkTerms.add(ts);
             ts.forEach(t -> df.merge(t, 1, Integer::sum));
         }
@@ -233,7 +236,7 @@ public final class TurboGraph {
             }
         }
         return new TurboGraph(codec, nC, nT, nD, kind, label, code, adj, rel, idf, termNode, entry, relVec,
-                System.currentTimeMillis() - t0);
+                System.currentTimeMillis() - t0, c::queryEntities);
     }
 
     private static int[] beam(TwoBitCodec codec, float[] q, int entry, Code[] code, int[][] sim, int[] simLen,

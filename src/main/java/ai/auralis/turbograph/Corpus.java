@@ -34,7 +34,18 @@ public final class Corpus {
             "PDF", "FIG", "TABLE", "NOTE", "SEE", "PAGE", "ET", "AL", "II", "III", "IV", "VI", "OF",
             "IN", "ON", "TO", "IS", "IT", "BY", "OR", "AS", "AN", "AT", "BE", "WE", "IF", "NO", "DO");
 
+    /** Matches capitalised names (Chris Evans, Warsaw Pact) for Wikipedia-style corpora. */
+    static final Pattern NAME = Pattern.compile(
+            "\\b\\p{Lu}[\\p{L}\\p{N}'\u2019.-]*(?:\\s+(?:of|the|de|del|da|von|van|and|for|on|in)?\\s*\\p{Lu}[\\p{L}\\p{N}'\u2019.-]*){0,4}");
+    static final Set<String> NAME_STOP = Set.of(
+            "THE", "A", "AN", "IN", "ON", "AT", "HE", "SHE", "IT", "THEY", "HIS", "HER", "ITS", "THIS", "THAT",
+            "THESE", "THOSE", "AS", "BY", "FOR", "FROM", "AFTER", "BEFORE", "DURING", "WHEN", "WHERE", "WHO",
+            "WHAT", "WHICH", "HOW", "WHY", "IS", "WAS", "ARE", "WERE", "AND", "BUT", "OR", "OF", "TO", "WITH",
+            "IF", "ALSO", "BOTH", "THERE", "THEIR", "WE", "I", "YOU", "ONE", "SOME", "MANY", "MOST", "OTHER");
+
     final int n;
+    /** True for Wikipedia-style corpora: entities are capitalised names and passage titles. */
+    final boolean wiki;
     final String[] text;
     final int[] doc;
     final String[] docTitle;
@@ -42,7 +53,12 @@ public final class Corpus {
     final float[][] emb;
 
     private Corpus(int n, String[] text, int[] doc, String[] docTitle, int[] ordinal, float[][] emb) {
+        this(n, false, text, doc, docTitle, ordinal, emb);
+    }
+
+    private Corpus(int n, boolean wiki, String[] text, int[] doc, String[] docTitle, int[] ordinal, float[][] emb) {
         this.n = n;
+        this.wiki = wiki;
         this.text = text;
         this.doc = doc;
         this.docTitle = docTitle;
@@ -89,6 +105,69 @@ public final class Corpus {
         }
         return new Corpus(n, texts.toArray(String[]::new), doc, titles.toArray(String[]::new), ord,
                 embs.toArray(float[][]::new));
+    }
+
+    /**
+     * A HippoRAG benchmark corpus from scripts/prep_hipporag.py output (idx, title, text, key).
+     * Passages are embedded as "title: text" with the document prefix, cached on disk.
+     * Passages sharing a title form one document.
+     */
+    static Corpus loadTsv(Path tsv, Embedder embedder, Path embCache, Map<String, Integer> keyToIdx) throws Exception {
+        List<String> lines = Files.readAllLines(tsv);
+        int n = lines.size();
+        String[] text = new String[n];
+        int[] doc = new int[n];
+        int[] ord = new int[n];
+        Map<String, Integer> docIdx = new HashMap<>();
+        Map<Integer, Integer> perDoc = new HashMap<>();
+        List<String> titles = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            String[] f = lines.get(i).split("\t", -1);
+            text[i] = f[1] + ": " + f[2];
+            Integer d = docIdx.get(f[1]);
+            if (d == null) {
+                d = titles.size();
+                docIdx.put(f[1], d);
+                titles.add(f[1]);
+            }
+            doc[i] = d;
+            ord[i] = perDoc.merge(d, 1, Integer::sum) - 1;
+            keyToIdx.put(f[3], i);
+        }
+        float[][] emb = embedder.documents(java.util.Arrays.asList(text), embCache);
+        return new Corpus(n, true, text, doc, titles.toArray(String[]::new), ord, emb);
+    }
+
+    /** Entity strings of a chunk: identifiers, plus names and the own title for wiki corpora. */
+    Set<String> termsOf(int i) {
+        if (!wiki) {
+            return terms(text[i]);
+        }
+        Set<String> out = names(text[i]);
+        out.add(normTitle(docTitle[doc[i]]));
+        return out;
+    }
+
+    /** Entity strings named in a query, by the same extractor as the corpus. */
+    Set<String> queryEntities(String q) {
+        return wiki ? names(q) : terms(q);
+    }
+
+    static Set<String> names(String text) {
+        Set<String> out = terms(text);
+        Matcher m = NAME.matcher(text);
+        while (m.find()) {
+            String t = m.group().replaceAll("[.'\u2019-]+$", "").toUpperCase();
+            if (!NAME_STOP.contains(t) && t.length() > 1) {
+                out.add(t);
+            }
+        }
+        return out;
+    }
+
+    /** "Chris Evans (actor)" -> "CHRIS EVANS". */
+    static String normTitle(String title) {
+        return title.replaceAll("\\s*\\(.*?\\)\\s*", " ").trim().toUpperCase();
     }
 
     String label(int i) {
@@ -174,6 +253,57 @@ public final class Corpus {
             Files.writeString(cacheFile, sb.append("]\n"), java.nio.file.StandardOpenOption.CREATE,
                     java.nio.file.StandardOpenOption.APPEND);
             return v;
+        }
+
+        /** Document embeddings ("search_document: " prefix), batched, cached as raw float32. */
+        float[][] documents(List<String> texts, Path cache) throws Exception {
+            int n = texts.size();
+            int dim = 768;
+            if (Files.exists(cache) && Files.size(cache) == (long) n * dim * 4) {
+                java.nio.FloatBuffer fb = java.nio.ByteBuffer.wrap(Files.readAllBytes(cache))
+                        .order(java.nio.ByteOrder.LITTLE_ENDIAN).asFloatBuffer();
+                float[][] out = new float[n][dim];
+                for (float[] row : out) {
+                    fb.get(row);
+                }
+                return out;
+            }
+            float[][] out = new float[n][];
+            int batch = 32;
+            long t0 = System.currentTimeMillis();
+            for (int i = 0; i < n; i += batch) {
+                StringBuilder body = new StringBuilder("{\"model\":\"nomic-embed-text\",\"input\":[");
+                for (int j = i; j < Math.min(n, i + batch); j++) {
+                    body.append(j == i ? "" : ",").append(json("search_document: " + texts.get(j)));
+                }
+                body.append("]}");
+                HttpResponse<String> r = http.send(HttpRequest.newBuilder(URI.create(base + "/api/embed"))
+                                .timeout(Duration.ofMinutes(5)).header("Content-Type", "application/json")
+                                .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build(),
+                        HttpResponse.BodyHandlers.ofString());
+                String s = r.body();
+                int a = s.indexOf("[[");
+                int b = s.indexOf("]]", a);
+                if (a < 0 || b < 0) {
+                    throw new IllegalStateException("Ollama embed failed: " + s);
+                }
+                String[] rows = s.substring(a + 2, b).split("\\],\\[");
+                for (int j = 0; j < rows.length; j++) {
+                    out[i + j] = parse("[" + rows[j] + "]");
+                }
+                if ((i / batch) % 50 == 0) {
+                    System.err.printf("  embedded %d/%d (%.0f s)%n", i + rows.length, n,
+                            (System.currentTimeMillis() - t0) / 1000.0);
+                }
+            }
+            java.nio.ByteBuffer bb = java.nio.ByteBuffer.allocate(n * dim * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            for (float[] row : out) {
+                for (float x : row) {
+                    bb.putFloat(x);
+                }
+            }
+            Files.write(cache, bb.array());
+            return out;
         }
 
         private static String json(String s) {

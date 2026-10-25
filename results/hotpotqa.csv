@@ -1,0 +1,20 @@
+dataset,method,full_precision,index_mb,r2,r5,all5,ms,nodes,accepted
+hotpotqa,"Exact float32 scan",true,30.14,0.7440,0.8640,0.7490,9.86,9811,
+hotpotqa,"TurboVec flat 2-bit scan",false,2.55,0.7410,0.8575,0.7380,9.27,9811,
+hotpotqa,"TurboVec flat 2-bit + exact rescore(100)",true,2.55,0.7440,0.8640,0.7490,10.09,9811,
+hotpotqa,"BM25 keyword",false,4.65,0.5645,0.7270,0.4920,0.56,27982,
+hotpotqa,"KG entity link + 1-hop",false,9.29,0.4560,0.5145,0.3110,0.23,61,61
+hotpotqa,"2-bit beam walk (ef=200)",false,9.29,0.7285,0.8445,0.7190,3.24,1703,
+hotpotqa,"2-bit threshold expansion (delta=0.08)",false,9.29,0.5920,0.6275,0.3460,0.54,418,2
+hotpotqa,"Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0)",false,9.29,0.3530,0.4930,0.2770,3.50,1956,69
+hotpotqa,"Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0)",false,9.29,0.3660,0.5375,0.2900,13.24,11473,70
+hotpotqa,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.05)",false,9.29,0.6825,0.7930,0.6640,4.21,1956,1323
+hotpotqa,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1)",false,9.29,0.6795,0.7935,0.6670,4.11,1956,1323
+hotpotqa,"Fused 2-bit + Push-PPR LOCAL (a=0.15, eps=1.0E-4, g=4.0, lambda=0.2)",false,9.29,0.6500,0.7910,0.6600,3.92,1956,1323
+hotpotqa,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.05)",false,9.29,0.7415,0.8630,0.7450,13.62,11473,1291
+hotpotqa,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1)",false,9.29,0.7355,0.8615,0.7420,13.73,11473,1291
+hotpotqa,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.2)",false,9.29,0.7065,0.8595,0.7370,13.26,11473,1291
+hotpotqa,"Fused 2-bit + Push-PPR SCAN (a=0.15, eps=1.0E-4, g=4.0, lambda=0.1) + exact rescore",true,9.29,0.7420,0.8620,0.7450,13.52,11473,1291
+hotpotqa,"Hybrid RRF: flat 2-bit + BM25",false,7.20,0.6705,0.8575,0.7280,9.59,37793,
+hotpotqa,"Hybrid RRF: flat 2-bit + BM25 + fused PPR SCAN",false,16.48,0.7045,0.8700,0.7540,21.98,49266,
+hotpotqa,"Hybrid RRF: flat+rescore + BM25 + fused PPR SCAN",true,16.48,0.7070,0.8715,0.7570,22.59,49266,
